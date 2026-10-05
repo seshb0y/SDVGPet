@@ -43,6 +43,22 @@ describe('decay', () => {
     expect(result).toEqual({ food: 10, walk: 10, play: 10, love: 10 });
   });
 
+  it('шагами (с сохранением промежуточного результата) убывает так же, как за один раз', () => {
+    const from = new Date('2026-12-27T06:00:00Z');
+    const to = new Date('2026-12-27T07:00:00Z');
+    const once = decay(FULL, from, to, SETTINGS);
+    const mid = new Date('2026-12-27T06:20:30Z');
+    const twoSteps = decay(decay(FULL, from, mid, SETTINGS), mid, to, SETTINGS);
+    expect(twoSteps.food).toBeCloseTo(once.food, 6);
+
+    let stepped: Needs = FULL;
+    for (let i = 0; i < 120; i++) {
+      stepped = decay(stepped, new Date(from.getTime() + i * 30_000), new Date(from.getTime() + (i + 1) * 30_000), SETTINGS);
+    }
+    expect(stepped.food).toBeCloseTo(once.food, 6);
+    expect(stepped.love).toBeCloseTo(once.love, 6);
+  });
+
   it('не мутирует входные шкалы', () => {
     decay(FULL, new Date('2026-12-27T06:00:00Z'), new Date('2026-12-27T08:00:00Z'), SETTINGS);
     expect(FULL.food).toBe(100);

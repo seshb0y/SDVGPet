@@ -13,8 +13,9 @@ function mapNeeds(needs: Needs, fn: (value: number, need: Need) => number): Need
 
 export function wakingMinutes(from: Date, to: Date, settings: Settings): number {
   const startMs = Math.max(from.getTime(), to.getTime() - TUNING.maxDecayHours * MS_PER_HOUR);
-  const total = Math.floor((to.getTime() - startMs) / MS_PER_MINUTE);
-  if (total <= 0) return 0;
+  const span = (to.getTime() - startMs) / MS_PER_MINUTE;
+  const total = Math.floor(span);
+  if (span <= 0) return 0;
 
   // ponytail: поминутный обход с постоянным сдвигом пояса — переход на летнее время
   // внутри окна не учитывается (для МСК неважно). Окно ограничено 72 ч → ≤ 4320 итераций.
@@ -24,6 +25,8 @@ export function wakingMinutes(from: Date, to: Date, settings: Settings): number 
     if (!isQuiet(minute, settings.quiet)) waking++;
     minute = (minute + 1) % 1440;
   }
+  // дробный остаток последней минуты: иначе шаговое применение теряет до 59 с за шаг
+  if (!isQuiet(minute, settings.quiet)) waking += span - total;
   return waking;
 }
 
