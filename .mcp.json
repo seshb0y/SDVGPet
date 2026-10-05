@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "memora": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\seshb\\.memora\\memora_server_warm.py"
+      ],
+      "env": {
+        "MEMORA_DB_PATH": "C:\\Users\\seshb\\.memora\\SDVGPet.db",
+        "MEMORA_EMBEDDING_MODEL": "sentence-transformers",
+        "SENTENCE_TRANSFORMERS_MODEL": "paraphrase-multilingual-MiniLM-L12-v2",
+        "MEMORA_EMBEDDING_STRICT": "1",
+        "MEMORA_ALLOW_ANY_TAG": "1",
+        "MEMORA_LLM_ENABLED": "false",
+        "MEMORA_CLOUD_GRAPH_ENABLED": "false",
+        "MEMORA_GRAPH_PORT": "8768",
+        "HF_HUB_OFFLINE": "1"
+      }
+    }
+  }
+}
