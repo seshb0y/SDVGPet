@@ -63,14 +63,26 @@ Telegram-бот + Telegram Mini App: виртуальный питомец (шп
 заменой деталей, анимации — CSS. Приметы: кремово-белый, рыжие уши и спина,
 тёмные глаза-бусинки, чёрный нос, пышная грива, язык наружу в радости.
 
+### Интеграция с Telegram
+- При старте `Telegram.WebApp.ready()` и `expand()`.
+- Отступы через `var(--tg-safe-area-inset-*)` и `var(--tg-content-safe-area-inset-*)`,
+  высота — `var(--tg-viewport-stable-height)`, не `100vh`.
+- Выполнение задачи — `HapticFeedback.notificationOccurred('success')`.
+- Часовой пояс при первом открытии — из `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+- Удаление задачи дублируется кнопкой в окне редактирования (свайп — не единственный способ).
+
 ## 4. Бот
 
 ### Входящие
-- `/start` — знакомство + кнопка «🐶 Открыть Шантика» (Mini App).
+- `/start` — знакомство + inline-кнопка `web_app` «🐶 Открыть Шантика».
+  Плюс `setChatMenuButton` с типом `web_app`, чтобы Mini App открывалась из любого места чата.
+  Mini App открывается только так: reply-клавиатура не передаёт `initData`.
 - Любой текст от пользователя → разовая задача на сегодня;
   ответ «Записал: «…» ✍️ Куда засчитаем?» с кнопками 🍖 🦮 🎾 🤍.
   Задача создаётся после выбора потребности.
-- Кнопки в напоминаниях: «✅ Сделала», «⏰ Через час» / «⏰ Позже».
+- Кнопки в напоминаниях: «✅ Сделала», «⏰ +15 мин», «⏰ +1 ч».
+- На каждое нажатие кнопки — `answerCallbackQuery` (короткий тост) и `editMessageText`:
+  кнопки убираются, в сообщении появляется итог («✅ засчитано»). Повторное нажатие невозможно.
 
 ### Исходящие (решает `tick`)
 | Тип | Когда | В лимите 6/день |
@@ -83,6 +95,11 @@ Telegram-бот + Telegram Mini App: виртуальный питомец (шп
 | Награда | сразу при выполнении условия | нет |
 
 - В тихие часы бот ничего не отправляет (рутины, попавшие в тихие часы, не отправляются).
+- `tick` идёт раз в 10 минут, поэтому рутина может прийти с опозданием до 10 минут.
+- Против привыкания: если 3 сигнала подряд остались без ответа, до утра минимальный
+  интервал между сигналами удваивается (3 ч → 6 ч).
+- Утро и вечер отправляются без звука (`disable_notification: true`);
+  со звуком — только рутины, сигналы, повторы и награды.
 - Сигнал предлагает её открытую задачу с этой потребностью; если таких нет —
   простое действие из встроенного списка.
 - На каждую ситуацию 5–10 вариантов фраз (`src/bot/phrases.ts`), выбор случайный.
@@ -104,13 +121,24 @@ web/          Mini App: Vite + React + TypeScript
 api/
   bot.ts        webhook Telegram (grammY)
   tick.ts       планировщик, вызывается cron-job.org каждые 10 минут
-  app/*.ts      REST для Mini App
+  app/[...path].ts  один роутер на весь REST Mini App (меньше функций и холодных стартов)
 src/core/     чистая логика без I/O (шкалы, состояние, награды, решения планировщика)
 src/db/       SQL-запросы (@neondatabase/serverless)
 src/bot/      обработчики и фразы
 ```
 
 Зависимости: `grammy`, `@neondatabase/serverless`, `react`, `zod`, `vitest`, `vite`.
+
+### Инфраструктура и бюджет
+- Регион: Neon `aws-eu-central-1`, Vercel `"regions": ["fra1"]` в `vercel.json`.
+- Neon free даёт 100 CU-ч в месяц. Размер вычислителя фиксирован на 0,25 CU (без автоскейла).
+  cron-job.org не вызывает `tick` с 01:00 до 07:00 по её поясу. Бюджет — до ~70 CU-ч в месяц.
+- cron-job.org: интервал 10 мин, секрет в заголовке, таймаут 30 с (`tick` обязан уложиться),
+  уведомления о сбоях на почту.
+- grammY: `new Bot(token, { botInfo })` с `botInfo` из переменной окружения `BOT_INFO`,
+  чтобы не вызывать `getMe` на каждом холодном старте.
+- `setWebhook` (скрипт деплоя): `secret_token`, `allowed_updates: ["message","callback_query"]`,
+  `drop_pending_updates: true`.
 
 ### Данные
 Один пользователь — без `user_id`.
@@ -119,10 +147,10 @@ src/bot/      обработчики и фразы
 |---|---|
 | `settings` (1 строка) | `timezone`, `quiet_start` (`"23:00"`), `quiet_end` (`"09:00"`) |
 | `pet` (1 строка) | `food`, `walk`, `play`, `love`, `updated_at`, `last_seen_at`, `completed_total`, `last_note_date` |
-| `tasks` | `id`, `title`, `need?`, `due_at?`, `done_at?`, `created_at` |
+| `tasks` | `id`, `title`, `need?`, `due_at?`, `done_at?`, `created_at`, `source_message_id?` (unique) |
 | `routines` | `id`, `title`, `need`, `time` (`"20:00"`), `days` (битовая маска пн..вс), `active` |
-| `routine_log` | `routine_id`, `date`, `sent_at?`, `done_at?`, `snoozed_until?` |
-| `outbox_log` | `id`, `kind`, `need?`, `sent_at`, `answered_at?`, `followed_up` |
+| `routine_log` | `routine_id`, `date` (unique вместе), `sent_at?`, `done_at?`, `snoozed_until?` |
+| `outbox_log` | `id`, `dedup_key` (unique), `kind`, `need?`, `sent_at`, `answered_at?`, `followed_up` |
 | `rewards` | `id`, `kind` (`note`/`photo`), `text?`, `file_id?`, `created_at`, `unlocked_at?` |
 
 Задача из чата сначала сохраняется черновиком (`need = null`), id черновика уходит
@@ -146,20 +174,31 @@ src/bot/      обработчики и фразы
 - `/api/tick`: секрет в заголовке.
 - Mini App: проверка подписи `initData` (HMAC от токена бота), `auth_date` не старше 24 ч,
   `user.id ∈ {USER_ID, ADMIN_ID}`.
-- Секреты (`BOT_TOKEN`, `DATABASE_URL`, `WEBHOOK_SECRET`, `TICK_SECRET`, `USER_ID`, `ADMIN_ID`)
-  только в переменных окружения.
+- Секреты и настройки (`BOT_TOKEN`, `BOT_INFO`, `DATABASE_URL`, `WEBHOOK_SECRET`, `TICK_SECRET`,
+  `USER_ID`, `ADMIN_ID`) — только в переменных окружения.
 
 ### Надёжность
-- `tick` идемпотентен: перед отправкой сверяется с `outbox_log` / `routine_log`.
-- Ошибка отправки в Telegram логируется; следующий `tick` повторяет попытку.
+- `tick` идемпотентен за счёт атомарного захвата: сначала
+  `INSERT ... ON CONFLICT DO NOTHING RETURNING` по уникальному ключу, сообщение отправляется
+  только если строка вставилась. Ключи (`dedup_key`) строит core: `morning:<дата>`,
+  `evening:<дата>`, `need:<need>:<дата>:<3-часовой слот>`, `followup:<id сигнала>`;
+  для рутин — `(routine_id, date)`. Два параллельных `tick` не продублируют сообщение.
+- Ошибка отправки в Telegram логируется, захват снимается; следующий `tick` повторяет попытку.
+- Webhook всегда отвечает 200: `bot.catch` логирует ошибку,
+  `webhookCallback(bot, "https", { onTimeout: "return" })`. Повтор того же update от Telegram
+  не создаст дубль задачи благодаря unique `source_message_id`.
+- Транзакции — только через `sql.transaction([...])` HTTP-драйвера (интерактивных нет).
 
 ## 6. Тестирование
 
 - **Юнит (vitest)** для `src/core`: убывание с тихими часами и сменой суток, выбор состояния,
   награды, решения планировщика (лимит, тихие часы, повтор через 1,5 ч, рутины вне лимита,
   идемпотентность). Это основное покрытие.
-- **Проверка `initData`** — юнит-тест на корректную/подделанную подпись.
-- **Mini App** — dev-режим с заглушкой `window.Telegram.WebApp`, проверка в браузере 390×844.
+- **Проверка `initData`** — юнит-тест на корректную/подделанную подпись. Строка проверки —
+  все поля кроме `hash`, по алфавиту, через `\n` (поле `signature` остаётся); ключ —
+  `HMAC_SHA256("WebAppData", BOT_TOKEN)`. В фикстуре — `initData` с полем `signature`.
+- **Mini App** — dev-режим с заглушкой `window.Telegram.WebApp` (включая CSS-переменные
+  safe area), проверка в браузере 390×844.
 - **Финальная** — живой Telegram на аккаунте разработчика (вручную или через Telegram MCP).
 
 ## 7. Вне MVP
