@@ -44,9 +44,19 @@ describe('planTick', () => {
   });
 
   it('повтор важнее сигнала и не дублирует его потребность', () => {
+    // 13:30 МСК: сигнал отправлен 10:00 МСК (> 3 ч назад) — кулдаун не мешает, дубль гасит только проверка потребности
     const ignored = entry(5, { need: 'food', answeredAt: null, sentAt: new Date('2026-12-27T07:00:00Z') });
-    expect(planTick(input('2026-12-27T09:00:00Z', { outboxToday: [ignored] }))).toEqual([
+    expect(planTick(input('2026-12-27T10:30:00Z', { outboxToday: [ignored] }))).toEqual([
       { kind: 'followup', parentId: 5, need: 'food', dedupKey: 'followup:5' },
+    ]);
+  });
+
+  it('при остатке лимита 1 приоритет у чек-ина, а не у повтора', () => {
+    // 09:40 МСК: окно утра; повтор сигнала от 08:00 МСК тоже созрел
+    const ignored = entry(5, { need: 'food', answeredAt: null, sentAt: new Date('2026-12-27T05:00:00Z') });
+    const filler = [1, 2, 3, 4].map((id) => entry(id));
+    expect(planTick(input('2026-12-27T06:40:00Z', { outboxToday: [...filler, ignored] }))).toEqual([
+      { kind: 'morning', dedupKey: 'morning:2026-12-27' },
     ]);
   });
 
