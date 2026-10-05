@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueRoutines } from '../../../src/core/schedule/routines.js';
+import { dueRoutines, snoozeFits } from '../../../src/core/schedule/routines.js';
 import { parseHHMM, type LocalTime } from '../../../src/core/time.js';
 import type { Routine, RoutineLogEntry } from '../../../src/core/types.js';
 
@@ -63,5 +63,26 @@ describe('dueRoutines', () => {
   it('не повторяет, пока отложенное время не наступило', () => {
     const log: RoutineLogEntry[] = [{ routineId: 1, doneAt: null, snoozedUntil: new Date('2026-12-27T18:00:00Z') }];
     expect(dueRoutines([PILLS], log, NOW, at('21:30'), QUIET)).toEqual([]);
+  });
+});
+
+describe('snoozeFits', () => {
+  const settings = { timezone: 'Europe/Moscow', quiet: QUIET };
+  // МСК = UTC+3
+  it('отложить на час в 20:00 — подходит', () => {
+    expect(snoozeFits(new Date('2026-12-27T17:00:00Z'), 60, settings)).toBe(true);
+  });
+
+  it('22:30 + 60 мин попадает в тихие часы', () => {
+    expect(snoozeFits(new Date('2026-12-27T19:30:00Z'), 60, settings)).toBe(false);
+  });
+
+  it('22:30 + 15 мин ещё до тихих часов', () => {
+    expect(snoozeFits(new Date('2026-12-27T19:30:00Z'), 15, settings)).toBe(true);
+  });
+
+  it('без тихих часов 23:30 + 60 мин переходит через полночь', () => {
+    const open = { timezone: 'Europe/Moscow', quiet: { start: '00:00', end: '00:00' } };
+    expect(snoozeFits(new Date('2026-12-27T20:30:00Z'), 60, open)).toBe(false);
   });
 });

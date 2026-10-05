@@ -1,6 +1,6 @@
-import { isQuiet, parseHHMM, type LocalTime } from '../time.js';
+import { isQuiet, localTime, parseHHMM, type LocalTime } from '../time.js';
 import { TUNING } from '../tuning.js';
-import type { QuietHours, Routine, RoutineLogEntry } from '../types.js';
+import type { QuietHours, Routine, RoutineLogEntry, Settings } from '../types.js';
 
 export interface DueRoutine {
   routineId: number;
@@ -42,4 +42,12 @@ export function dueRoutines(
     const due = dueOne(routine, entry, now, local, quiet);
     return due ? [due] : [];
   });
+}
+
+const MS_PER_MINUTE = 60_000;
+
+/** Отложенное на `minutes` напоминание не потеряется: не в тихие часы и в тот же локальный день. */
+export function snoozeFits(now: Date, minutes: number, settings: Settings): boolean {
+  const target = localTime(new Date(now.getTime() + minutes * MS_PER_MINUTE), settings.timezone);
+  return !isQuiet(target.minutes, settings.quiet) && target.date === localTime(now, settings.timezone).date;
 }
