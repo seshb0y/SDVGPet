@@ -146,7 +146,7 @@ src/bot/      обработчики и фразы
 | Таблица | Поля |
 |---|---|
 | `settings` (1 строка) | `timezone`, `quiet_start` (`"23:00"`), `quiet_end` (`"09:00"`) |
-| `pet` (1 строка) | `food`, `walk`, `play`, `love`, `updated_at`, `last_seen_at`, `completed_total`, `last_note_date` |
+| `pet` (1 строка) | `food`, `walk`, `play`, `love`, `updated_at`, `last_completed_at`, `completed_total`, `last_note_date` |
 | `tasks` | `id`, `title`, `need?`, `due_at?`, `done_at?`, `created_at`, `source_message_id?` (unique) |
 | `routines` | `id`, `title`, `need`, `time` (`"20:00"`), `days` (битовая маска пн..вс), `active` |
 | `routine_log` | `routine_id`, `date` (unique вместе), `sent_at?`, `done_at?`, `snoozed_until?` |
@@ -202,4 +202,5 @@ src/bot/      обработчики и фразы
 - **Финальная** — живой Telegram на аккаунте разработчика (вручную или через Telegram MCP).
 
 ## 7. Вне MVP
-LLM-разбор задач, 3D-модель, несколько пользователей, выбор уровня настойчивости в настройках.
+LLM-разбор задач, 3D-модель, несколько пользователей, выбор уровня настойчивости в настройках,
+режим «посиди со мной» (body doubling).
