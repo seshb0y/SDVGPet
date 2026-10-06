@@ -11,7 +11,7 @@ export async function handleTick(
   req: Request,
   deps: { secret: string; run: () => Promise<TickReport> },
 ): Promise<Response> {
-  if (!sameSecret(req.headers.get('x-tick-secret') ?? '', deps.secret)) {
+  if (!deps.secret || !sameSecret(req.headers.get('x-tick-secret') ?? '', deps.secret)) {
     return new Response('Unauthorized', { status: 401 });
   }
   return Response.json(await deps.run());

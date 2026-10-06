@@ -24,4 +24,11 @@ describe('handleTick', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ sent: 2, failed: 0 });
   });
+
+  it('с пустым секретом в deps — 401 и tick не запускается', async () => {
+    const run = vi.fn(async () => ({ sent: 0, failed: 0 }));
+    const res = await handleTick(new Request('https://x/api/tick', { method: 'POST' }), { secret: '', run });
+    expect(res.status).toBe(401);
+    expect(run).not.toHaveBeenCalled();
+  });
 });

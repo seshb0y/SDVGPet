@@ -83,13 +83,16 @@ async function cappedMessage(ctx: TickContext, item: Exclude<Outgoing, { kind: '
     return morningMessage(today, ctx.miniAppUrl, ctx.random);
   }
   if (item.kind === 'evening') return eveningMessage(await doneToday(ctx), ctx.random);
-  const needItem = item as Extract<Outgoing, { kind: 'need' | 'followup' }>;
-  const suggestion = (await listOpenTasks(ctx.db)).find((t) => t.need === needItem.need) ?? null;
-  return needMessage(needItem.need, suggestion, ctx.random, item.kind === 'followup');
+  // After morning/evening returns, only 'need' and 'followup' remain, both have .need
+  if (item.kind === 'need' || item.kind === 'followup') {
+    const suggestion = (await listOpenTasks(ctx.db)).find((t) => t.need === item.need) ?? null;
+    return needMessage(item.need, suggestion, ctx.random, item.kind === 'followup');
+  }
+  throw new Error('unreachable');
 }
 
 async function deliverCapped(ctx: TickContext, item: Exclude<Outgoing, { kind: 'routine' }>): Promise<Delivery> {
-  const need = item.kind === 'need' || item.kind === 'followup' ? (item as any).need : null;
+  const need = item.kind === 'need' || item.kind === 'followup' ? item.need : null;
   const id = await claimOutbox(ctx.db, { dedupKey: item.dedupKey, kind: item.kind, need, localDate: ctx.date, now: ctx.now });
   if (id === null) return 'skipped';
   if (!(await trySend(ctx, await cappedMessage(ctx, item), item.kind))) {
