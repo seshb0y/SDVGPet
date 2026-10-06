@@ -228,3 +228,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .center-text { text-align: center; }
 
 @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+.gear { position: absolute; right: 0; border: 0; background: none; font-size: 22px; color: var(--muted); padding: 4px 8px; }
+
+.speech {
+  position: relative;
+  margin: 4px auto 12px;
+  max-width: 280px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+.bars { display: grid; gap: 8px; margin: 8px 0; }
+.bar { display: flex; align-items: center; gap: 8px; }
+.bar__emoji { width: 24px; text-align: center; }
+.bar__track { flex: 1; height: 10px; background: var(--track); border-radius: 5px; overflow: hidden; }
+.bar__fill { height: 100%; background: var(--fur); border-radius: 5px; transition: width 0.6s ease; }
+.bar__fill--low { background: var(--low); }
+
+.banner { background: #fde8ea; color: #a33a48; border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; font-size: 14px; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--bottom) + 72px);
+  transform: translateX(-50%);
+  z-index: 5;
+  background: var(--text);
+  color: #fff;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
