@@ -66,7 +66,9 @@ Telegram-бот + Telegram Mini App: виртуальный питомец (шп
 ### Интеграция с Telegram
 - При старте `Telegram.WebApp.ready()` и `expand()`.
 - Отступы через `var(--tg-safe-area-inset-*)` и `var(--tg-content-safe-area-inset-*)`,
-  высота — `var(--tg-viewport-stable-height)`, не `100vh`.
+  высота корня — `100%` от WebView (цепочка `html → body → #root`), не `100vh` и не
+  `var(--tg-viewport-stable-height)`: после сворачивания Mini App Telegram не всегда
+  обновляет «стабильную» высоту, и интерфейс схлопывался.
 - Выполнение задачи — `HapticFeedback.notificationOccurred('success')`.
 - Часовой пояс при первом открытии — из `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 - Удаление задачи дублируется кнопкой в окне редактирования (свайп — не единственный способ).
