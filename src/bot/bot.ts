@@ -4,7 +4,7 @@ import type { Config } from '../config.js';
 import { NEEDS } from '../core/types.js';
 import type { Db } from '../db/client.js';
 import { addNote, addPhoto, countLocked } from '../db/rewards.js';
-import { createDraft } from '../db/tasks.js';
+import { createDraft, deleteTask } from '../db/tasks.js';
 import { NEED_LABEL } from '../services/messages.js';
 import { registerCallbacks } from './callbacks.js';
 import { toInlineKeyboard } from './telegram.js';
@@ -45,16 +45,21 @@ function registerAdmin(bot: Bot, deps: BotDeps): void {
 }
 
 function registerTasks(bot: Bot, deps: BotDeps): void {
-  bot.on('message:text', async (ctx) => {
+  bot.filter((ctx) => ctx.from?.id === deps.config.USER_ID).on('message:text', async (ctx) => {
     const text = ctx.message.text.trim();
     if (!text || text.startsWith('/')) return;
-    const title = text.slice(0, MAX_TITLE);
+    const title = Array.from(text).slice(0, MAX_TITLE).join('');
     const draft = await createDraft(deps.db, title, ctx.update.update_id);
     if (!draft) return; // повторная доставка того же update
     const buttons = NEEDS.map((need) => ({ text: NEED_LABEL[need], data: `need:${draft.id}:${need}` }));
-    await ctx.reply(`Записал: «${title}» ✍️ Куда засчитаем?`, {
-      reply_markup: toInlineKeyboard([buttons.slice(0, 2), buttons.slice(2)]),
-    });
+    try {
+      await ctx.reply(`Записал: «${title}» ✍️ Куда засчитаем?`, {
+        reply_markup: toInlineKeyboard([buttons.slice(0, 2), buttons.slice(2)]),
+      });
+    } catch (error) {
+      await deleteTask(deps.db, draft.id);
+      throw error;
+    }
   });
 }
 

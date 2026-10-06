@@ -51,6 +51,23 @@ describe('задачи из чата', () => {
     for (const need of ['food', 'walk', 'play', 'love']) expect(markup).toContain(`need:${draft!.id}:${need}`);
   });
 
+  it('текст админа не создаёт задачу и не спрашивает потребность', async () => {
+    const { db, bot, calls } = await setup();
+    await bot.handleUpdate(textUpdate(ADMIN, 'купить корм'));
+    expect(await db.query('SELECT * FROM tasks')).toEqual([]);
+    expect(calls).toEqual([]);
+  });
+
+  it('если ответ с кнопками не отправился, черновик удаляется', async () => {
+    const { db, bot } = await setup();
+    bot.api.config.use(async (prev, method, payload) => {
+      if (method === 'sendMessage') throw new Error('network down');
+      return prev(method, payload);
+    });
+    await expect(bot.handleUpdate(textUpdate(USER, 'купить корм'))).rejects.toThrow('network down');
+    expect(await db.query('SELECT * FROM tasks')).toEqual([]);
+  });
+
   it('повторная доставка того же update не создаёт дубль и не отвечает дважды', async () => {
     const { db, bot, calls } = await setup();
     const update = textUpdate(USER, 'купить корм');
