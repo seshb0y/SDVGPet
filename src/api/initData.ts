@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const DAY_SECONDS = 86_400;
+const FUTURE_SKEW_SECONDS = 60;
 
 function sameHex(a: string, b: string): boolean {
   const left = Buffer.from(a, 'hex');
@@ -37,8 +38,10 @@ export function verifyInitData(
   const expected = createHmac('sha256', secretKey).update(checkString).digest('hex');
   if (!sameHex(expected, hash)) return null;
 
-  const authDate = Number(params.get('auth_date'));
-  if (!Number.isFinite(authDate) || now.getTime() / 1000 - authDate > maxAgeSeconds) return null;
+  const rawDate = params.get('auth_date');
+  if (!rawDate || !/^\d+$/.test(rawDate)) return null;
+  const age = now.getTime() / 1000 - Number(rawDate);
+  if (age > maxAgeSeconds || age < -FUTURE_SKEW_SECONDS) return null;
   const userId = userIdOf(params.get('user'));
   return userId === null ? null : { userId };
 }

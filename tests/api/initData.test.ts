@@ -29,4 +29,11 @@ describe('verifyInitData', () => {
     const noUser = signInitData({ auth_date: String(Math.floor(NOW.getTime() / 1000)) }, TOKEN);
     expect(verifyInitData(noUser, TOKEN, NOW)).toBeNull();
   });
+
+  it('отвергает отсутствующий auth_date и auth_date из будущего', () => {
+    const user = JSON.stringify({ id: 111 });
+    expect(verifyInitData(signInitData({ user }, TOKEN), TOKEN, NOW)).toBeNull();
+    const future = String(Math.floor(NOW.getTime() / 1000) + 3600);
+    expect(verifyInitData(signInitData({ auth_date: future, user }, TOKEN), TOKEN, NOW)).toBeNull();
+  });
 });

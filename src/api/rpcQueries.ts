@@ -1,5 +1,6 @@
 import { petState } from '../core/mood.js';
 import { localTime } from '../core/time.js';
+import { TUNING } from '../core/tuning.js';
 import { NEEDS, type Needs } from '../core/types.js';
 import { countLocked, listUnlocked } from '../db/rewards.js';
 import { getRoutineLog, listRoutines } from '../db/routines.js';
@@ -9,7 +10,6 @@ import { type CompletionResult, loadCurrentNeeds } from '../services/completion.
 import { rewardMessages } from '../services/messages.js';
 import type { RpcDeps } from './rpc.js';
 
-const PHOTO_EVERY = 10;
 const MS_PER_MINUTE = 60_000;
 
 const floorNeeds = (needs: Needs): Needs =>
@@ -42,7 +42,13 @@ export async function state(deps: RpcDeps): Promise<unknown> {
 }
 
 export async function finish(deps: RpcDeps, userId: number, result: CompletionResult | null): Promise<unknown> {
-  if (result) await deps.notify(userId, rewardMessages(result.rewards));
+  if (result) {
+    try {
+      await deps.notify(userId, rewardMessages(result.rewards));
+    } catch (error) {
+      console.error('[rpc] не удалось отправить награду', error);
+    }
+  }
   const { needs } = await loadCurrentNeeds(deps.db, deps.now);
   return { completed: result !== null, needs: floorNeeds(needs) };
 }
@@ -58,7 +64,7 @@ export async function rewards(deps: RpcDeps): Promise<unknown> {
     notes: pick('note').map((r) => ({ id: r.id, text: r.text, unlockedAt: r.unlockedAt })),
     photos: pick('photo').map((r) => ({ id: r.id, caption: r.text, unlockedAt: r.unlockedAt })),
     lockedPhotos: locked.photos,
-    nextPhotoIn: PHOTO_EVERY - (pet.completedTotal % PHOTO_EVERY),
+    nextPhotoIn: TUNING.photoEvery - (pet.completedTotal % TUNING.photoEvery),
   };
 }
 

@@ -82,7 +82,7 @@ export async function handleRpc(req: Request, deps: RpcDeps): Promise<Response> 
     const result = await dispatch(request, deps, verified.userId);
     if (request.op === 'photo') {
       const fileId = (result as { fileId: string | null }).fileId;
-      return fileId ? deps.fetchPhoto(fileId) : fail(404, 'not_found');
+      return fileId ? await deps.fetchPhoto(fileId) : fail(404, 'not_found');
     }
     return Response.json({ ok: true, data: result });
   } catch (error) {

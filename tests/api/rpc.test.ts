@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TUNING } from '../../src/core/tuning.js';
 import { handleRpc, type RpcDeps } from '../../src/api/rpc.js';
 import type { Db } from '../../src/db/client.js';
 import { addNote, addPhoto, unlockOldest } from '../../src/db/rewards.js';
@@ -113,6 +114,38 @@ describe('операции', () => {
     expect(res.headers.get('content-type')).toBe('image/jpeg');
     expect(fetchPhoto).toHaveBeenCalledWith('FILE_1');
     const rewards = await data(await call(deps, { op: 'rewards.list' }));
-    expect(rewards).toMatchObject({ photos: [{ id: photo.id, caption: 'море' }], lockedPhotos: 0, nextPhotoIn: 10 });
+    expect(rewards).toMatchObject({ photos: [{ id: photo.id, caption: 'море' }], lockedPhotos: 0, nextPhotoIn: TUNING.photoEvery });
+  });
+
+  it('fetchPhoto упал — 500 в конверте', async () => {
+    const { db, deps, fetchPhoto } = await setup();
+    const photo = await addPhoto(db, 'FILE_1', null);
+    await unlockOldest(db, 'photo', NOW);
+    fetchPhoto.mockRejectedValueOnce(new Error('telegram down'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const res = await call(deps, { op: 'photo', id: photo.id });
+    spy.mockRestore();
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ ok: false, error: 'internal' });
+  });
+
+  it('notify упал — выполнение всё равно возвращает completed: true', async () => {
+    const { deps, notify } = await setup();
+    notify.mockRejectedValueOnce(new Error('telegram down'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const task = await data(await call(deps, { op: 'tasks.create', title: 'вода', need: 'food' }));
+    const res = await call(deps, { op: 'tasks.complete', id: task.id });
+    spy.mockRestore();
+    expect(await data(res)).toMatchObject({ completed: true });
+  });
+
+  it('tasks.update: dueAt: null сбрасывает срок, без dueAt — сохраняет', async () => {
+    const { deps } = await setup();
+    const dueAt = '2026-12-28T09:00:00.000Z';
+    const task = await data(await call(deps, { op: 'tasks.create', title: 'вода', need: 'food', dueAt }));
+    const kept = await data(await call(deps, { op: 'tasks.update', id: task.id, title: 'ещё вода' }));
+    expect(kept.dueAt).toBe(dueAt);
+    const cleared = await data(await call(deps, { op: 'tasks.update', id: task.id, dueAt: null }));
+    expect(cleared.dueAt).toBeNull();
   });
 });
