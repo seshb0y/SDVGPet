@@ -27,15 +27,27 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DONE: Outcome = { toast: 'Засчитано! 🐾', status: '✅ засчитано', completion: null };
 const ALREADY: Outcome = { toast: 'Уже засчитано 🐾', status: '✅ засчитано', completion: null };
 
+const NUM = /^\d{1,9}$/;
+const parseId = (v: string | undefined): number | null => (v !== undefined && NUM.test(v) && Number(v) > 0 ? Number(v) : null);
+
+function isRealDate(value: string | undefined): value is string {
+  if (value === undefined || !DATE.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 export function parseCallback(data: string): CallbackAction | null {
-  const [kind, a, b, c] = data.split(':');
-  const id = Number(a);
-  if (kind === 'later' && a === undefined) return { kind: 'later' };
-  if (kind === 'need' && Number.isInteger(id) && isNeed(b)) return { kind: 'need', taskId: id, need: b };
-  if (kind === 'done' && Number.isInteger(id)) return { kind: 'done', taskId: id };
-  if (kind === 'quick' && isNeed(a) && Number.isInteger(Number(b))) return { kind: 'quick', need: a, index: Number(b) };
-  if (kind === 'rdone' && Number.isInteger(id) && b && DATE.test(b)) return { kind: 'rdone', routineId: id, date: b };
-  if (kind === 'rsnooze' && Number.isInteger(id) && b && DATE.test(b) && (c === '15' || c === '60')) {
+  const parts = data.split(':');
+  const [kind, a, b, c] = parts;
+  const id = parseId(a);
+  if (kind === 'later' && parts.length === 1) return { kind: 'later' };
+  if (kind === 'need' && parts.length === 3 && id !== null && isNeed(b)) return { kind: 'need', taskId: id, need: b };
+  if (kind === 'done' && parts.length === 2 && id !== null) return { kind: 'done', taskId: id };
+  if (kind === 'quick' && parts.length === 3 && isNeed(a) && b !== undefined && NUM.test(b) && Number(b) < QUICK_ACTIONS[a].length) {
+    return { kind: 'quick', need: a, index: Number(b) };
+  }
+  if (kind === 'rdone' && parts.length === 3 && id !== null && isRealDate(b)) return { kind: 'rdone', routineId: id, date: b };
+  if (kind === 'rsnooze' && parts.length === 4 && id !== null && isRealDate(b) && (c === '15' || c === '60')) {
     return { kind: 'rsnooze', routineId: id, date: b, minutes: c === '15' ? 15 : 60 };
   }
   return null;
@@ -74,7 +86,7 @@ export function registerCallbacks(bot: Bot, deps: BotDeps): void {
   bot.on('callback_query:data', async (ctx) => {
     const now = deps.clock();
     try {
-      await answerOpenSignals(deps.db, now);
+      await answerOpenSignals(deps.db, now); // любое нажатие — активность, даже на устаревшей кнопке
       const action = parseCallback(ctx.callbackQuery.data);
       if (!action) return void (await ctx.answerCallbackQuery({ text: 'Кнопка устарела 🐾' }));
       const outcome = await perform(action, deps, now);

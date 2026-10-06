@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createBot } from '../../src/bot/bot.js';
 import { parseCallback } from '../../src/bot/callbacks.js';
 import { claimOutbox, getOutboxToday } from '../../src/db/outbox.js';
@@ -30,6 +30,9 @@ describe('parseCallback', () => {
     expect(parseCallback('rsnooze:3:2026-12-27:5')).toBeNull();
     expect(parseCallback('need:5:cake')).toBeNull();
     expect(parseCallback('whatever')).toBeNull();
+    for (const bad of ['done:', 'done:-1', 'done:0', 'done:1e3', 'done:0x10', 'done:7:x', 'need:1.5:walk', 'rdone:1:2026-99-99', 'quick:food:-1', 'quick:food:99', 'later:x']) {
+      expect(parseCallback(bad), bad).toBeNull();
+    }
   });
 });
 
@@ -96,5 +99,16 @@ describe('кнопки', () => {
     const { bot, calls } = await setup();
     await bot.handleUpdate(callbackUpdate(USER, 'whatever'));
     expect(calls[0]).toMatchObject({ method: 'answerCallbackQuery' });
+    expect(methods(calls)).not.toContain('editMessageText');
+  });
+
+  it('ошибка действия: update не падает, в лог пишется, пользователь получает тост', async () => {
+    const { db, bot, calls } = await setup();
+    await db.query('DROP TABLE tasks CASCADE');
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await expect(bot.handleUpdate(callbackUpdate(USER, 'done:1'))).resolves.toBeUndefined();
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+    expect(calls.find((c) => c.method === 'answerCallbackQuery')?.payload.text).toContain('Ой, что-то пошло не так');
   });
 });
