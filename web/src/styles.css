@@ -138,7 +138,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 50%;
   background: none;
   padding: 0;
+  position: relative;
 }
+/* визуально 26px, зона нажатия 44px */
+.check::after { content: ''; position: absolute; inset: -11px; }
 .check--done { background: var(--fur); }
 .check:disabled:not(.check--done) { opacity: 0.4; }
 

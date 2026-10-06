@@ -40,7 +40,7 @@ function Notes({ notes }: { notes: Rewards['notes'] }) {
     <>
       {notes.map((note) => (
         <div key={note.id} className="card note">
-          <div>💌 {note.text}</div>
+          <div>💌 {note.text ?? 'Записка без текста — но Шантик очень гордится тобой'}</div>
           <div className="muted">{dateOf(note.unlockedAt)}</div>
         </div>
       ))}

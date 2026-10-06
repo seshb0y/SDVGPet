@@ -6,6 +6,7 @@ const DEAD_ZONE = 6;
 
 export function SwipeRow({ onDelete, children }: { onDelete: () => void; children: ReactNode }) {
   const [offset, setOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number; base: number } | null>(null);
   const moved = useRef(false);
 
@@ -20,12 +21,14 @@ export function SwipeRow({ onDelete, children }: { onDelete: () => void; childre
     const dx = event.clientX - from.x;
     if (Math.abs(dx) < DEAD_ZONE || Math.abs(dx) < Math.abs(event.clientY - from.y)) return;
     moved.current = true;
+    setDragging(true);
     setOffset(Math.min(0, Math.max(-REVEAL, from.base + dx)));
   }
 
   function up() {
     if (!start.current) return;
     start.current = null;
+    setDragging(false);
     setOffset((value) => (value < -THRESHOLD ? -REVEAL : 0));
   }
 
@@ -42,12 +45,18 @@ export function SwipeRow({ onDelete, children }: { onDelete: () => void; childre
 
   return (
     <div className="swipe">
-      <button className="swipe__delete" style={{ opacity: offset === 0 ? 0 : 1 }} onClick={onDelete}>
+      <button
+        className="swipe__delete"
+        style={{ opacity: offset === 0 ? 0 : 1, visibility: offset === 0 ? 'hidden' : 'visible' }}
+        aria-hidden={offset === 0}
+        tabIndex={offset === 0 ? -1 : 0}
+        onClick={onDelete}
+      >
         Удалить
       </button>
       <div
         className="swipe__content"
-        style={{ transform: `translateX(${offset}px)` }}
+        style={{ transform: `translateX(${offset}px)`, transition: dragging ? 'none' : undefined }}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
