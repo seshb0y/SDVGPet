@@ -4,3 +4,4 @@ node_modules/
 .vercel/
 .superpowers/
 web/dist/
+.playwright-mcp/
