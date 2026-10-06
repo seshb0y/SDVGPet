@@ -42,7 +42,7 @@ export function SwipeRow({ onDelete, children }: { onDelete: () => void; childre
 
   return (
     <div className="swipe">
-      <button className="swipe__delete" onClick={onDelete}>
+      <button className="swipe__delete" style={{ opacity: offset === 0 ? 0 : 1 }} onClick={onDelete}>
         Удалить
       </button>
       <div
