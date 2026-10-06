@@ -26,6 +26,7 @@ export function POST(req: Request): Promise<Response> {
     botToken: config.BOT_TOKEN,
     allowedUserIds: [config.USER_ID, config.ADMIN_ID],
     now: new Date(),
+    userChatId: config.USER_ID,
     notify: async (chatId, messages) => {
       for (const message of messages) await sendTo(api, chatId, message);
     },

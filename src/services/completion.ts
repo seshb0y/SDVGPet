@@ -7,7 +7,7 @@ import { answerOpenSignals } from '../db/outbox.js';
 import { type Reward, unlockOldest } from '../db/rewards.js';
 import { getRoutine, markRoutineDone } from '../db/routines.js';
 import { getPet, getSettings, type PetRecord, savePet } from '../db/state.js';
-import { createTask, markTaskDone } from '../db/tasks.js';
+import { createQuickTask, markTaskDone } from '../db/tasks.js';
 
 export interface CompletionResult {
   needs: Needs;
@@ -59,9 +59,13 @@ export async function completeRoutine(
   return applyPetCompletion(db, routine.need, now);
 }
 
-export async function quickComplete(db: Db, need: Need, title: string, now: Date): Promise<CompletionResult> {
-  const task = await createTask(db, { title, need, dueAt: null });
-  const result = await completeTask(db, task.id, now);
-  if (!result) throw new Error('Только что созданная задача не выполнилась');
-  return result;
+export async function quickComplete(
+  db: Db,
+  need: Need,
+  title: string,
+  signalMessageId: number,
+  now: Date,
+): Promise<CompletionResult | null> {
+  const task = await createQuickTask(db, { title, need }, signalMessageId);
+  return task ? completeTask(db, task.id, now) : null; // null: это сообщение уже засчитано
 }

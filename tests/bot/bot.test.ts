@@ -78,6 +78,16 @@ describe('задачи из чата', () => {
   });
 });
 
+describe('не личные чаты', () => {
+  it('текст из группы игнорируется без ответа', async () => {
+    const { db, bot, calls } = await setup();
+    const update = textUpdate(USER, 'купить корм');
+    await bot.handleUpdate({ ...update, message: { ...update.message!, chat: { id: -100, type: 'group', title: 'g' } } });
+    expect(await db.query('SELECT * FROM tasks')).toEqual([]);
+    expect(calls).toEqual([]);
+  });
+});
+
 describe('админ', () => {
   it('/note сохраняет записку, /left показывает остаток', async () => {
     const { db, bot, calls } = await setup();

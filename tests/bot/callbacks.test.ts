@@ -112,3 +112,16 @@ describe('кнопки', () => {
     expect(calls.find((c) => c.method === 'answerCallbackQuery')?.payload.text).toContain('Ой, что-то пошло не так');
   });
 });
+
+describe('быстрые действия', () => {
+  it('двойное нажатие на одно сигнальное сообщение засчитывается один раз', async () => {
+    const { db, bot, calls } = await setup();
+    await bot.handleUpdate(callbackUpdate(USER, 'quick:food:0'));
+    await bot.handleUpdate(callbackUpdate(USER, 'quick:food:0'));
+    const pet = await getPet(db);
+    expect(pet.needs.food).toBe(55);
+    expect(pet.completedTotal).toBe(1);
+    expect(await db.query('SELECT 1 FROM tasks')).toHaveLength(1);
+    expect(String(calls.filter((c) => c.method === 'answerCallbackQuery')[1]?.payload.text)).toContain('Уже');
+  });
+});

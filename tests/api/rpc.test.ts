@@ -16,7 +16,7 @@ async function setup(needs = { food: 20.7, walk: 85, play: 85, love: 85 }) {
   await savePet(db, { needs, updatedAt: NOW, lastCompletedAt: NOW, completedTotal: 0, lastNoteDate: null });
   const notify = vi.fn(async () => undefined);
   const fetchPhoto = vi.fn(async () => new Response('IMG', { headers: { 'content-type': 'image/jpeg' } }));
-  const deps: RpcDeps = { db, botToken: TOKEN, allowedUserIds: [USER, 222], now: NOW, notify, fetchPhoto };
+  const deps: RpcDeps = { db, botToken: TOKEN, allowedUserIds: [USER, 222], now: NOW, userChatId: USER, notify, fetchPhoto };
   return { db, deps, notify, fetchPhoto };
 }
 
@@ -86,6 +86,14 @@ describe('операции', () => {
     const task = await data(await call(deps, { op: 'tasks.create', title: 'вода', need: 'food' }));
     await call(deps, { op: 'tasks.complete', id: task.id });
     expect(notify).toHaveBeenCalledWith(USER, [expect.objectContaining({ text: expect.stringContaining('ты умница') })]);
+  });
+
+  it('награда за выполнение админом всё равно уходит в чат пользователя', async () => {
+    const { db, deps, notify } = await setup({ food: 50, walk: 90, play: 90, love: 90 });
+    await addNote(db, 'ты умница');
+    const task = await data(await call(deps, { op: 'tasks.create', title: 'вода', need: 'food' }));
+    await call(deps, { op: 'tasks.complete', id: task.id }, `tma ${initDataFor(222, TOKEN, NOW)}`);
+    expect(notify).toHaveBeenCalledWith(USER, expect.anything());
   });
 
   it('рутины: создать, выполнить за сегодня один раз', async () => {

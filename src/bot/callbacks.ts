@@ -55,7 +55,7 @@ export function parseCallback(data: string): CallbackAction | null {
 
 const completed = (result: CompletionResult | null): Outcome => (result ? { ...DONE, completion: result } : ALREADY);
 
-async function perform(action: CallbackAction, deps: BotDeps, now: Date): Promise<Outcome> {
+async function perform(action: CallbackAction, deps: BotDeps, now: Date, messageId: number): Promise<Outcome> {
   const { db } = deps;
   switch (action.kind) {
     case 'need': {
@@ -67,7 +67,7 @@ async function perform(action: CallbackAction, deps: BotDeps, now: Date): Promis
       return completed(await completeTask(db, action.taskId, now));
     case 'quick': {
       const title = QUICK_ACTIONS[action.need][action.index] ?? NEED_LABEL[action.need];
-      return completed(await quickComplete(db, action.need, title, now));
+      return completed(await quickComplete(db, action.need, title, messageId, now));
     }
     case 'later':
       return { toast: 'Хорошо, позже 🐾', status: '⏰ позже', completion: null };
@@ -89,14 +89,15 @@ export function registerCallbacks(bot: Bot, deps: BotDeps): void {
       await answerOpenSignals(deps.db, now); // любое нажатие — активность, даже на устаревшей кнопке
       const action = parseCallback(ctx.callbackQuery.data);
       if (!action) return void (await ctx.answerCallbackQuery({ text: 'Кнопка устарела 🐾' }));
-      const outcome = await perform(action, deps, now);
-      await ctx.answerCallbackQuery({ text: outcome.toast });
-      const original = ctx.callbackQuery.message?.text ?? '';
-      await ctx.editMessageText(`${original}\n\n${outcome.status}`.trim());
+      const outcome = await perform(action, deps, now, ctx.callbackQuery.message?.message_id ?? 0);
       const chatId = ctx.chat?.id;
+      // награды раньше ответа и правки: сбой edit не должен их потерять
       for (const message of rewardMessages(outcome.completion?.rewards ?? [])) {
         if (chatId !== undefined) await sendTo(ctx.api, chatId, message);
       }
+      await ctx.answerCallbackQuery({ text: outcome.toast });
+      const original = ctx.callbackQuery.message?.text ?? '';
+      await ctx.editMessageText(`${original}\n\n${outcome.status}`.trim());
     } catch (error) {
       console.error('[bot] ошибка callback', error);
       await ctx.answerCallbackQuery({ text: 'Ой, что-то пошло не так 🐾' }).catch(() => undefined);

@@ -41,10 +41,10 @@ export async function state(deps: RpcDeps): Promise<unknown> {
   };
 }
 
-export async function finish(deps: RpcDeps, userId: number, result: CompletionResult | null): Promise<unknown> {
+export async function finish(deps: RpcDeps, result: CompletionResult | null): Promise<unknown> {
   if (result) {
     try {
-      await deps.notify(userId, rewardMessages(result.rewards));
+      await deps.notify(deps.userChatId, rewardMessages(result.rewards));
     } catch (error) {
       console.error('[rpc] не удалось отправить награду', error);
     }

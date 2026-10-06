@@ -79,6 +79,7 @@ describe('completeRoutine и quickComplete', () => {
 
   it('quickComplete создаёт и выполняет задачу', async () => {
     const db = await dbWithPet();
-    expect((await quickComplete(db, 'food', 'выпить воды', NOW)).needs.food).toBe(55);
+    expect((await quickComplete(db, 'food', 'выпить воды', 7, NOW))?.needs.food).toBe(55);
+    expect(await quickComplete(db, 'food', 'выпить воды', 7, NOW)).toBeNull();
   });
 });

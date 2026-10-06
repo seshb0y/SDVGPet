@@ -16,6 +16,7 @@ export interface RpcDeps {
   botToken: string;
   allowedUserIds: readonly number[];
   now: Date;
+  userChatId: number;
   notify: (chatId: number, messages: OutgoingMessage[]) => Promise<void>;
   fetchPhoto: (fileId: string) => Promise<Response>;
 }
@@ -29,7 +30,7 @@ const found = <T>(value: T | null): T => {
 };
 const dueDate = (value: string | null | undefined) => (value == null ? value : new Date(value));
 
-async function dispatch(request: RpcRequest, deps: RpcDeps, userId: number): Promise<unknown> {
+async function dispatch(request: RpcRequest, deps: RpcDeps): Promise<unknown> {
   const { db, now } = deps;
   switch (request.op) {
     case 'state':
@@ -45,7 +46,7 @@ async function dispatch(request: RpcRequest, deps: RpcDeps, userId: number): Pro
     case 'tasks.delete':
       return found((await deleteTask(db, request.id)) ? { deleted: true } : null);
     case 'tasks.complete':
-      return finish(deps, userId, await completeTask(db, request.id, now));
+      return finish(deps, await completeTask(db, request.id, now));
     case 'routines.list':
       return listRoutines(db);
     case 'routines.create':
@@ -57,7 +58,7 @@ async function dispatch(request: RpcRequest, deps: RpcDeps, userId: number): Pro
     case 'routines.delete':
       return found((await deleteRoutine(db, request.id)) ? { deleted: true } : null);
     case 'routines.complete':
-      return finish(deps, userId, await completeRoutine(db, request.id, (await today(deps)).date, now));
+      return finish(deps, await completeRoutine(db, request.id, (await today(deps)).date, now));
     case 'settings.get':
       return getSettings(db);
     case 'settings.update': {
@@ -79,7 +80,7 @@ export async function handleRpc(req: Request, deps: RpcDeps): Promise<Response> 
 
   try {
     const request = RpcRequest.parse(await req.json());
-    const result = await dispatch(request, deps, verified.userId);
+    const result = await dispatch(request, deps);
     if (request.op === 'photo') {
       const fileId = (result as { fileId: string | null }).fileId;
       return fileId ? await deps.fetchPhoto(fileId) : fail(404, 'not_found');

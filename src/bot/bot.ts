@@ -49,7 +49,7 @@ function registerTasks(bot: Bot, deps: BotDeps): void {
     const text = ctx.message.text.trim();
     if (!text || text.startsWith('/')) return;
     const title = Array.from(text).slice(0, MAX_TITLE).join('');
-    const draft = await createDraft(deps.db, title, ctx.update.update_id);
+    const draft = await createDraft(deps.db, title, ctx.message.message_id);
     if (!draft) return; // повторная доставка того же update
     const buttons = NEEDS.map((need) => ({ text: NEED_LABEL[need], data: `need:${draft.id}:${need}` }));
     try {
@@ -69,6 +69,7 @@ export function createBot(deps: BotDeps): Bot {
   const allowed = new Set([config.USER_ID, config.ADMIN_ID]);
 
   bot.use(async (ctx, next) => {
+    if (ctx.chat && ctx.chat.type !== 'private') return;
     if (ctx.from && allowed.has(ctx.from.id)) return next();
     if (ctx.message) await ctx.reply(NOT_ALLOWED);
     else if (ctx.callbackQuery) await ctx.answerCallbackQuery();

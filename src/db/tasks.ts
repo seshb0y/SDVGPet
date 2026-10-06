@@ -47,6 +47,19 @@ export function createDraft(db: Db, title: string, sourceMessageId: number): Pro
   );
 }
 
+export async function createQuickTask(
+  db: Db,
+  input: { title: string; need: Need },
+  sourceMessageId: number,
+): Promise<Task | null> {
+  return one(
+    db,
+    `INSERT INTO tasks (title, need, source_message_id) VALUES ($1, $2, $3)
+     ON CONFLICT (source_message_id) DO NOTHING RETURNING ${COLUMNS}`,
+    [input.title, input.need, sourceMessageId],
+  );
+}
+
 export async function createTask(db: Db, input: { title: string; need: Need; dueAt: Date | null }): Promise<Task> {
   const task = await one(db, `INSERT INTO tasks (title, need, due_at) VALUES ($1, $2, $3) RETURNING ${COLUMNS}`, [
     input.title,
