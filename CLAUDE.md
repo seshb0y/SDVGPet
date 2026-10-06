@@ -21,6 +21,8 @@ Pet-проект: Telegram-бот + Telegram Mini App для людей с СД�
 - БД: Neon Postgres через `@neondatabase/serverless`, без ORM
 - Планировщик: cron-job.org → `/api/tick`
 - Тесты: vitest
+- Команды: `npm test`, `npm run typecheck`, `npm run db:migrate`, `npm run bot:webhook`
+- Слои сервера: `api/*.ts` (Vercel) → `src/api`, `src/bot` → `src/services` → `src/db`, `src/core`
 
 ## Архитектура
 Functional core, imperative shell:

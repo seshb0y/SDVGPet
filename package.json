@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node --env-file=.env scripts/migrate.mjs",
+    "bot:webhook": "node --env-file=.env scripts/set-webhook.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
