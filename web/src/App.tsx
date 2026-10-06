@@ -26,6 +26,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('pet');
   const [celebrating, setCelebrating] = useState(false);
+  const [celebrationId, setCelebrationId] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const reload = useCallback(async () => {
@@ -38,9 +39,17 @@ export function App() {
     }
   }, [api]);
 
-  useEffect(() => {
-    void createApi().then(setApi);
+  const start = useCallback(async () => {
+    try {
+      setApi(await createApi());
+    } catch (e) {
+      setError(errorText(e));
+    }
   }, []);
+
+  useEffect(() => {
+    void start();
+  }, [start]);
   useEffect(() => {
     void reload();
   }, [reload]);
@@ -48,7 +57,7 @@ export function App() {
     if (!celebrating) return;
     const timer = setTimeout(() => setCelebrating(false), CELEBRATE_MS);
     return () => clearTimeout(timer);
-  }, [celebrating]);
+  }, [celebrating, celebrationId]);
 
   const applySettings = useCallback((settings: Settings) => setState((s) => (s ? { ...s, settings } : s)), []);
   useTimezoneSync(api, state?.settings, applySettings);
@@ -59,6 +68,7 @@ export function App() {
         if ((await run()).completed) {
           hapticSuccess();
           setCelebrating(true);
+          setCelebrationId((n) => n + 1);
         }
         await reload();
       } catch (e) {
@@ -68,7 +78,7 @@ export function App() {
     [reload],
   );
 
-  if (!api || !state) return <Splash error={error} onRetry={reload} />;
+  if (!api || !state) return <Splash error={error} onRetry={api ? reload : start} />;
 
   return (
     <div className="app">

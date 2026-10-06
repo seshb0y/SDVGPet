@@ -11,7 +11,8 @@ interface Props {
 }
 
 function timezones(current: string): string[] {
-  const all = Intl.supportedValuesOf('timeZone');
+  // Старые Safari не знают supportedValuesOf — тогда показываем только текущий пояс.
+  const all = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [current];
   return all.includes(current) ? all : [current, ...all];
 }
 

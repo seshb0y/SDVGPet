@@ -19,15 +19,31 @@ function markSynced(): void {
   }
 }
 
+let inFlight = false;
+
 /** Спека: часовой пояс при первом открытии — из Intl. Потом пояс меняется только в настройках. */
 export function useTimezoneSync(api: Api | null, settings: Settings | undefined, onSynced: (settings: Settings) => void): void {
   useEffect(() => {
-    if (!api || !settings || alreadySynced()) return;
-    markSynced();
+    if (!api || !settings || inFlight || alreadySynced()) return;
     const device = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (device === settings.timezone) return;
-    api.updateSettings({ ...settings, timezone: device }).then(onSynced, (error: unknown) => {
-      console.error('[timezone] не удалось сохранить часовой пояс', error);
-    });
+    if (device === settings.timezone) {
+      markSynced();
+      return;
+    }
+    inFlight = true;
+    api
+      .updateSettings({ ...settings, timezone: device })
+      .then(
+        (saved) => {
+          markSynced();
+          onSynced(saved);
+        },
+        (error: unknown) => {
+          console.error('[timezone] не удалось сохранить часовой пояс, повторим при следующем открытии', error);
+        },
+      )
+      .finally(() => {
+        inFlight = false;
+      });
   }, [api, settings, onSynced]);
 }
