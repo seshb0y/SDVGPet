@@ -1,3 +1,5 @@
 {
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "web/dist"
 }
