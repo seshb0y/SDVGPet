@@ -1,0 +1,28 @@
+.shantik { display: block; margin: 0 auto; overflow: visible; }
+.shantik__body { transform-origin: 100px 190px; transform-box: view-box; }
+.shantik__tail { transform-origin: 150px 140px; transform-box: view-box; animation: wag 1.2s ease-in-out infinite; }
+
+.shantik--idle .shantik__body { animation: bob 3s ease-in-out infinite; }
+.shantik--bounce .shantik__body { animation: bob 1.4s ease-in-out infinite; }
+.shantik--bounce .shantik__tail { animation-duration: 0.4s; }
+.shantik--tilt .shantik__body { animation: tilt 2.4s ease-in-out infinite; }
+.shantik--breathe .shantik__body { animation: breathe 4s ease-in-out infinite; }
+.shantik--breathe .shantik__tail { animation: none; }
+.shantik--jump .shantik__body { animation: jump 0.6s ease-out 3; }
+.shantik--jump .shantik__tail { animation-duration: 0.25s; }
+
+.shantik__prop { animation: bob 2s ease-in-out infinite; }
+.shantik__zzz { animation: float 3s ease-in-out infinite; }
+.shantik__sparkles { animation: twinkle 0.8s ease-in-out infinite alternate; }
+
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes wag { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+@keyframes tilt { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-5deg); } }
+@keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.02, 0.98); } }
+@keyframes jump { 0% { transform: translateY(0); } 40% { transform: translateY(-22px); } 100% { transform: translateY(0); } }
+@keyframes float { 0%, 100% { transform: translateY(0); opacity: 0.6; } 50% { transform: translateY(-6px); opacity: 1; } }
+@keyframes twinkle { from { opacity: 0.4; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .shantik, .shantik * { animation: none !important; }
+}
