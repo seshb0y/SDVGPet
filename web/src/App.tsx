@@ -54,6 +54,13 @@ export function App() {
     void reload();
   }, [reload]);
   useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void reload();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [reload]);
+  useEffect(() => {
     if (!celebrating) return;
     const timer = setTimeout(() => setCelebrating(false), CELEBRATE_MS);
     return () => clearTimeout(timer);

@@ -2,6 +2,10 @@ interface WebApp {
   initData: string;
   ready(): void;
   expand(): void;
+  isVersionAtLeast?(version: string): boolean;
+  disableVerticalSwipes?(): void;
+  setHeaderColor?(color: string): void;
+  setBackgroundColor?(color: string): void;
   HapticFeedback?: { notificationOccurred(type: 'success' | 'error' | 'warning'): void };
 }
 
@@ -19,6 +23,8 @@ const DEV_SAFE_AREA: Record<string, string> = {
   '--tg-content-safe-area-inset-bottom': '0px',
 };
 
+const CREAM = '#fdf6ec';
+
 const webApp = (): WebApp | undefined => window.Telegram?.WebApp;
 
 export function getInitData(): string {
@@ -32,6 +38,12 @@ export function isDevPreview(): boolean {
 export function initTelegram(): void {
   webApp()?.ready();
   webApp()?.expand();
+  const tg = webApp();
+  if (tg?.isVersionAtLeast?.('7.7')) tg.disableVerticalSwipes?.();
+  if (tg?.isVersionAtLeast?.('6.1')) {
+    tg.setHeaderColor?.(CREAM);
+    tg.setBackgroundColor?.(CREAM);
+  }
   if (!isDevPreview()) return;
   for (const [name, value] of Object.entries(DEV_SAFE_AREA)) {
     document.documentElement.style.setProperty(name, value);
