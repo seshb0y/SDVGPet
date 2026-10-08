@@ -37,7 +37,24 @@ describe('/start', () => {
     await bot.handleUpdate(textUpdate(USER, '/start'));
     const send = calls.find((c) => c.method === 'sendMessage');
     expect(JSON.stringify(send?.payload.reply_markup)).toContain('https://app.example');
-    expect(methods(calls)).toContain('setChatMenuButton');
+    const menu = calls.find((c) => c.method === 'setChatMenuButton');
+    expect(menu?.payload.menu_button).toMatchObject({ type: 'web_app' });
+  });
+
+  it('админу кнопка меню показывает список команд', async () => {
+    const { bot, calls } = await setup();
+    await bot.handleUpdate(textUpdate(ADMIN, '/start'));
+    const menu = calls.find((c) => c.method === 'setChatMenuButton');
+    expect(menu?.payload.menu_button).toEqual({ type: 'commands' });
+  });
+});
+
+describe('/help', () => {
+  it('админу объясняет, как отправить записку, фото и узнать остаток', async () => {
+    const { bot, calls } = await setup();
+    await bot.handleUpdate(textUpdate(ADMIN, '/help'));
+    const text = String(calls.find((c) => c.method === 'sendMessage')?.payload.text);
+    for (const part of ['/note', 'фото', '/left']) expect(text).toContain(part);
   });
 });
 
