@@ -5,3 +5,8 @@ node_modules/
 .superpowers/
 web/dist/
 .playwright-mcp/
+kling/
+scratchpad/
+.claude-flow/
+.claude/.proven-config-version
+.claude/proven-config.json

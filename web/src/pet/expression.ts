@@ -1,23 +1,21 @@
-import type { Need, PetState } from '../api/types';
+import type { PetState } from '../api/types';
 
 export interface Expression {
-  eyes: 'open' | 'sad' | 'closed' | 'joy';
-  mouth: 'smile' | 'sad' | 'tongue';
-  prop: Need | null;
+  pose: 'awake' | 'sleep';
   extra: 'zzz' | 'sparkles' | null;
   motion: 'idle' | 'bounce' | 'tilt' | 'breathe' | 'jump';
 }
 
 export function expressionFor(mood: PetState, celebrating: boolean): Expression {
-  if (celebrating) return { eyes: 'joy', mouth: 'tongue', prop: null, extra: 'sparkles', motion: 'jump' };
+  if (celebrating) return { pose: 'awake', extra: 'sparkles', motion: 'jump' };
   switch (mood.kind) {
     case 'sleeping':
-      return { eyes: 'closed', mouth: 'smile', prop: null, extra: 'zzz', motion: 'breathe' };
+      return { pose: 'sleep', extra: 'zzz', motion: 'breathe' };
     case 'asking':
-      return { eyes: 'sad', mouth: 'sad', prop: mood.need, extra: null, motion: 'tilt' };
+      return { pose: 'awake', extra: null, motion: 'tilt' };
     case 'happy':
-      return { eyes: 'open', mouth: 'tongue', prop: null, extra: null, motion: 'bounce' };
+      return { pose: 'awake', extra: null, motion: 'bounce' };
     case 'ok':
-      return { eyes: 'open', mouth: 'smile', prop: null, extra: null, motion: 'idle' };
+      return { pose: 'awake', extra: null, motion: 'idle' };
   }
 }

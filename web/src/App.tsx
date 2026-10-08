@@ -10,7 +10,8 @@ import { TreasuresTab } from './tabs/TreasuresTab';
 import { hapticSuccess } from './telegram';
 import { useTimezoneSync } from './useTimezoneSync';
 
-const CELEBRATE_MS = 2500;
+/** Длина ролика радости (clips/joy.mp4): праздник длится, пока он играет. */
+const CELEBRATE_MS = 5000;
 type Tab = 'pet' | 'tasks' | 'treasures';
 const TABS: readonly { id: Tab; label: string }[] = [
   { id: 'pet', label: '🐶 Шантик' },
